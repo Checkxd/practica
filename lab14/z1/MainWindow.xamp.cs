@@ -1,5 +1,4 @@
-﻿using GradeJournal.ViewModels;
-using System.Windows;
+﻿using System.Windows;
 
 namespace GradeJournal
 {
@@ -8,7 +7,7 @@ namespace GradeJournal
         public MainWindow()
         {
             InitializeComponent();
-            DataContext = new MainViewModel();
+            DataContext = new ViewModels.JournalViewModel();
         }
     }
 }

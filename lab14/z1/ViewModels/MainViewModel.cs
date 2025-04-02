@@ -1,20 +1,27 @@
 ﻿using GradeJournal.Commands;
 using GradeJournal.Models;
+using GradeJournal.Services;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using z1;
 
 namespace GradeJournal.ViewModels
 {
-    public class MainViewModel : INotifyPropertyChanged
+    public class JournalViewModel : INotifyPropertyChanged
     {
-        public ObservableCollection<Grade> Grades { get; set; }
-        private Grade _selectedGrade;
+        private readonly JournalService _journalService;
+        private bool _isLoading;
 
-        public Grade SelectedGrade
+        public ObservableCollection<StudentModel> Students { get; set; }
+        public ObservableCollection<CourseModel> Courses { get; set; }
+        public ObservableCollection<GradeModel> Grades { get; set; }
+
+        private GradeModel _selectedGrade;
+        public GradeModel SelectedGrade
         {
             get => _selectedGrade;
             set
@@ -24,21 +31,54 @@ namespace GradeJournal.ViewModels
             }
         }
 
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set { _isLoading = value; OnPropertyChanged(); }
+        }
+
         public ICommand AddGradeCommand { get; }
         public ICommand EditGradeCommand { get; }
         public ICommand DeleteGradeCommand { get; }
+        public ICommand ExportToExcelCommand { get; }
+        public ICommand LoadDataCommand { get; }
 
-        public MainViewModel()
+        public JournalViewModel()
         {
-            Grades = new ObservableCollection<Grade>();
+            _journalService = new JournalService();
+            Students = new ObservableCollection<StudentModel>();
+            Courses = new ObservableCollection<CourseModel>();
+            Grades = new ObservableCollection<GradeModel>();
+
             AddGradeCommand = new RelayCommand(AddGrade);
             EditGradeCommand = new RelayCommand(EditGrade, CanEditOrDelete);
             DeleteGradeCommand = new RelayCommand(DeleteGrade, CanEditOrDelete);
+            ExportToExcelCommand = new RelayCommand(ExportToExcel);
+            LoadDataCommand = new RelayCommand(async param => await LoadDataAsync());
+
+            // Загрузка данных при старте
+            LoadDataCommand.Execute(null);
+        }
+
+        private async Task LoadDataAsync()
+        {
+            IsLoading = true;
+            var students = await _journalService.GetStudentsAsync();
+            var courses = await _journalService.GetCoursesAsync();
+            var grades = await _journalService.GetGradesAsync();
+
+            Students.Clear();
+            foreach (var student in students) Students.Add(student);
+            Courses.Clear();
+            foreach (var course in courses) Courses.Add(course);
+            Grades.Clear();
+            foreach (var grade in grades) Grades.Add(grade);
+            IsLoading = false;
         }
 
         private void AddGrade(object parameter)
         {
-            var newGrade = new Grade { Date = DateTime.Now };
+            var newGrade = new GradeModel { Date = DateTime.Now };
             var window = new GradeWindow(newGrade)
             {
                 Owner = Application.Current.MainWindow
@@ -54,11 +94,13 @@ namespace GradeJournal.ViewModels
         {
             if (SelectedGrade != null)
             {
-                var gradeToEdit = new Grade
+                var gradeToEdit = new GradeModel
                 {
                     Id = SelectedGrade.Id,
-                    StudentName = SelectedGrade.StudentName,
+                    StudentId = SelectedGrade.StudentId,
+                    CourseId = SelectedGrade.CourseId,
                     Value = SelectedGrade.Value,
+                    IsPresent = SelectedGrade.IsPresent,
                     Comment = SelectedGrade.Comment,
                     Date = SelectedGrade.Date
                 };
@@ -70,8 +112,10 @@ namespace GradeJournal.ViewModels
 
                 if (window.ShowDialog() == true)
                 {
-                    SelectedGrade.StudentName = gradeToEdit.StudentName;
+                    SelectedGrade.StudentId = gradeToEdit.StudentId;
+                    SelectedGrade.CourseId = gradeToEdit.CourseId;
                     SelectedGrade.Value = gradeToEdit.Value;
+                    SelectedGrade.IsPresent = gradeToEdit.IsPresent;
                     SelectedGrade.Comment = gradeToEdit.Comment;
                 }
             }
@@ -86,6 +130,11 @@ namespace GradeJournal.ViewModels
             {
                 Grades.Remove(SelectedGrade);
             }
+        }
+
+        private void ExportToExcel(object parameter)
+        {
+            MessageBox.Show("Экспорт в Excel пока не реализован.", "Информация");
         }
 
         private bool CanEditOrDelete(object parameter) => SelectedGrade != null;

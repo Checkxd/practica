@@ -4,14 +4,15 @@ using System.Runtime.CompilerServices;
 
 namespace GradeJournal.Models
 {
-    public class Grade : INotifyPropertyChanged
+    public class GradeModel : INotifyPropertyChanged
     {
         private int _id;
-        private string _studentName;
+        private int _studentId;
+        private int _courseId;
         private double _value;
+        private bool _isPresent;
         private string _comment;
         private DateTime _date;
-        private bool _isPresent;
         private double _averageGrade;
 
         public int Id
@@ -20,10 +21,16 @@ namespace GradeJournal.Models
             set { _id = value; OnPropertyChanged(); }
         }
 
-        public string StudentName
+        public int StudentId
         {
-            get => _studentName;
-            set { _studentName = value; OnPropertyChanged(); }
+            get => _studentId;
+            set { _studentId = value; OnPropertyChanged(); }
+        }
+
+        public int CourseId
+        {
+            get => _courseId;
+            set { _courseId = value; OnPropertyChanged(); }
         }
 
         public double Value
@@ -33,8 +40,14 @@ namespace GradeJournal.Models
             {
                 _value = value;
                 OnPropertyChanged();
-                RecalculateAverage(); // Пересчёт среднего балла
+                RecalculateAverage();
             }
+        }
+
+        public bool IsPresent
+        {
+            get => _isPresent;
+            set { _isPresent = value; OnPropertyChanged(); }
         }
 
         public string Comment
@@ -49,27 +62,20 @@ namespace GradeJournal.Models
             set { _date = value; OnPropertyChanged(); }
         }
 
-        public bool IsPresent
-        {
-            get => _isPresent;
-            set { _isPresent = value; OnPropertyChanged(); }
-        }
-
         public double AverageGrade
         {
             get => _averageGrade;
             private set { _averageGrade = value; OnPropertyChanged(); }
         }
 
-        public Grade()
+        public GradeModel()
         {
             RecalculateAverage();
         }
 
         private void RecalculateAverage()
         {
-            // Упрощённая логика: средний балл равен текущей оценке
-            AverageGrade = Value;
+            AverageGrade = Value; // Упрощённая логика
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

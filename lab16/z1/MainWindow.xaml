@@ -1,0 +1,42 @@
+﻿<Window x:Class="JournalApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        KeyDown="Window_KeyDown">
+    <Window.DataContext>
+        <local:JournalViewModel/>
+    </Window.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Menu Grid.Row="0">
+            <MenuItem Header="Файл"/>
+            <MenuItem Header="Студенты"/>
+            <MenuItem Header="Оценки"/>
+            <MenuItem Header="Настройки"/>
+        </Menu>
+
+        <DataGrid Grid.Row="1" ItemsSource="{Binding Grades}" 
+                 SelectedItem="{Binding SelectedGrade}"
+                 AutoGenerateColumns="False">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Студент" Binding="{Binding StudentId}"/>
+                <DataGridTextColumn Header="Оценка" Binding="{Binding Value, Mode=TwoWay}"/>
+                <DataGridTextColumn Header="Комментарий" Binding="{Binding Comment, Mode=TwoWay}"/>
+                <DataGridCheckBoxColumn Header="Присутствие" Binding="{Binding IsPresent, Mode=TwoWay}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal">
+            <Button Content="Добавить оценку" Command="{Binding AddGradeCommand}"/>
+            <Button Content="Редактировать оценку" Command="{Binding EditGradeCommand}"/>
+            <Button Content="Удалить оценку" Command="{Binding DeleteGradeCommand}"/>
+        </StackPanel>
+
+        <ProgressBar IsIndeterminate="True" Visibility="{Binding IsLoading, 
+            Converter={StaticResource BooleanToVisibilityConverter}}"/>
+    </Grid>
+</Window>

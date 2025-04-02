@@ -7,7 +7,9 @@
         <KeyBinding Key="E" Modifiers="Ctrl" Command="{Binding EditGradeCommand}"/>
         <KeyBinding Key="Delete" Command="{Binding DeleteGradeCommand}"/>
     </Window.InputBindings>
-
+    <Window.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -32,18 +34,37 @@
             <Button Content="Добавить оценку" Command="{Binding AddGradeCommand}" Padding="10"/>
             <Button Content="Редактировать оценку" Command="{Binding EditGradeCommand}" Padding="10"/>
             <Button Content="Удалить оценку" Command="{Binding DeleteGradeCommand}" Padding="10"/>
+            <Button Command="{Binding ExportToExcelCommand}" ToolTip="Экспортировать в Excel">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" Padding="5">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Экспорт в Excel" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
         </ToolBar>
 
-        <!-- Список оценок -->
+        <!-- ListView с DataTemplate -->
         <ListView Grid.Row="2" ItemsSource="{Binding Grades}" SelectedItem="{Binding SelectedGrade}">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="Студент" DisplayMemberBinding="{Binding StudentName}" Width="120"/>
-                    <GridViewColumn Header="Оценка" DisplayMemberBinding="{Binding Value}" Width="90"/>
-                    <GridViewColumn Header="Комментарий" DisplayMemberBinding="{Binding Comment}" Width="200"/>
-                    <GridViewColumn Header="Дата" DisplayMemberBinding="{Binding Date}" Width="130"/>
-                </GridView>
-            </ListView.View>
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding StudentId}" Width="50" Margin="5"/>
+                        <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="50" Margin="5"/>
+                        <CheckBox IsChecked="{Binding IsPresent, Mode=TwoWay}" Margin="5"/>
+                        <TextBlock Text="{Binding Comment}" Width="150" Margin="5"/>
+                        <TextBlock Text="{Binding Date, StringFormat=yyyy-MM-dd}" Width="100" Margin="5"/>
+                        <TextBlock Text="{Binding AverageGrade, Mode=OneWay}" Width="70" Margin="5"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListView.ItemTemplate>
         </ListView>
+
+        <!-- Прогресс-бар -->
+        <ProgressBar Grid.Row="2" IsIndeterminate="True" Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}" Height="20"/>
     </Grid>
+    
 </Window>
