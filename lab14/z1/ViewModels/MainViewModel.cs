@@ -5,7 +5,6 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
-using z1;
 
 namespace GradeJournal.ViewModels
 {
@@ -27,6 +26,7 @@ namespace GradeJournal.ViewModels
         public ICommand AddGradeCommand { get; }
         public ICommand EditGradeCommand { get; }
         public ICommand DeleteGradeCommand { get; }
+        public ICommand ExportToExcelCommand { get; }
 
         public MainViewModel()
         {
@@ -34,6 +34,11 @@ namespace GradeJournal.ViewModels
             AddGradeCommand = new RelayCommand(AddGrade);
             EditGradeCommand = new RelayCommand(EditGrade, CanEditOrDelete);
             DeleteGradeCommand = new RelayCommand(DeleteGrade, CanEditOrDelete);
+            ExportToExcelCommand = new RelayCommand(ExportToExcel);
+
+            // Пример начальных данных
+            Grades.Add(new Grade { Id = 1, StudentName = "Иванов", Value = 4.5, Comment = "Хорошо", Date = DateTime.Now, IsPresent = true });
+            Grades.Add(new Grade { Id = 2, StudentName = "Петров", Value = 3.0, Comment = "Пропуск", Date = DateTime.Now, IsPresent = false });
         }
 
         private void AddGrade(object parameter)
@@ -60,7 +65,8 @@ namespace GradeJournal.ViewModels
                     StudentName = SelectedGrade.StudentName,
                     Value = SelectedGrade.Value,
                     Comment = SelectedGrade.Comment,
-                    Date = SelectedGrade.Date
+                    Date = SelectedGrade.Date,
+                    IsPresent = SelectedGrade.IsPresent
                 };
 
                 var window = new GradeWindow(gradeToEdit)
@@ -73,6 +79,7 @@ namespace GradeJournal.ViewModels
                     SelectedGrade.StudentName = gradeToEdit.StudentName;
                     SelectedGrade.Value = gradeToEdit.Value;
                     SelectedGrade.Comment = gradeToEdit.Comment;
+                    SelectedGrade.IsPresent = gradeToEdit.IsPresent;
                 }
             }
         }
@@ -86,6 +93,12 @@ namespace GradeJournal.ViewModels
             {
                 Grades.Remove(SelectedGrade);
             }
+        }
+
+        private void ExportToExcel(object parameter)
+        {
+            MessageBox.Show("Экспорт в Excel пока не реализован.", "Информация");
+            // Здесь можно добавить логику экспорта с использованием библиотеки, например, EPPlus
         }
 
         private bool CanEditOrDelete(object parameter) => SelectedGrade != null;

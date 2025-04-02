@@ -1,9 +1,10 @@
 ﻿<Window x:Class="GradeJournal.GradeWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Оценка" Height="200" Width="300" WindowStartupLocation="CenterOwner">
+        Title="Оценка" Height="250" Width="300" WindowStartupLocation="CenterOwner">
     <Grid Margin="10,10,0,10" HorizontalAlignment="Left" Width="270">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -15,15 +16,18 @@
         </Grid.ColumnDefinitions>
 
         <Label Grid.Row="0" Grid.Column="0" Content="Студент:"/>
-        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding StudentName}"/>
+        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding StudentName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
         <Label Grid.Row="1" Grid.Column="0" Content="Оценка:"/>
-        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Value}"/>
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
         <Label Grid.Row="2" Grid.Column="0" Content="Комментарий:"/>
-        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Comment}"/>
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
-        <StackPanel Grid.Row="3" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,5,10">
+        <Label Grid.Row="3" Grid.Column="0" Content="Посещаемость:"/>
+        <CheckBox Grid.Row="3" Grid.Column="1" IsChecked="{Binding IsPresent, Mode=TwoWay}" Checked="CheckBox"/>
+
+        <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,5,10">
             <Button Content="OK" Width="80" Margin="0,0,10,0" IsDefault="True" Click="OkButton_Click"/>
             <Button Content="Отмена" Width="80" IsCancel="True"/>
         </StackPanel>

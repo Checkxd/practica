@@ -32,18 +32,41 @@
             <Button Content="Добавить оценку" Command="{Binding AddGradeCommand}" Padding="10"/>
             <Button Content="Редактировать оценку" Command="{Binding EditGradeCommand}" Padding="10"/>
             <Button Content="Удалить оценку" Command="{Binding DeleteGradeCommand}" Padding="10"/>
+            <Button Command="{Binding ExportToExcelCommand}" ToolTip="Экспортировать в Excel">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" Padding="5">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Экспорт в Excel" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
         </ToolBar>
 
-        <!-- Список оценок -->
-        <ListView Grid.Row="2" ItemsSource="{Binding Grades}" SelectedItem="{Binding SelectedGrade}">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="Студент" DisplayMemberBinding="{Binding StudentName}" Width="120"/>
-                    <GridViewColumn Header="Оценка" DisplayMemberBinding="{Binding Value}" Width="90"/>
-                    <GridViewColumn Header="Комментарий" DisplayMemberBinding="{Binding Comment}" Width="200"/>
-                    <GridViewColumn Header="Дата" DisplayMemberBinding="{Binding Date}" Width="130"/>
-                </GridView>
-            </ListView.View>
-        </ListView>
+        <!-- Таблица студентов с DataTemplate -->
+        <DataGrid Grid.Row="2" ItemsSource="{Binding Grades}" SelectedItem="{Binding SelectedGrade}" AutoGenerateColumns="False">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Студент" Binding="{Binding StudentName}" Width="120"/>
+                <DataGridTemplateColumn Header="Оценка" Width="90">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Посещаемость" Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsPresent, Mode=TwoWay}" HorizontalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Комментарий" Binding="{Binding Comment}" Width="200"/>
+                <DataGridTextColumn Header="Дата" Binding="{Binding Date}" Width="130"/>
+                <DataGridTextColumn Header="Средний балл" Binding="{Binding AverageGrade, Mode=OneWay}" Width="100"/>
+            </DataGrid.Columns>
+        </DataGrid>
     </Grid>
 </Window>
