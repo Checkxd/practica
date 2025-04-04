@@ -15,9 +15,13 @@ namespace z1.ViewModels
     public class JournalViewModel : INotifyPropertyChanged
     {
         private readonly JournalService _journalService;
+        private readonly NotificationService _notificationService;
+        private readonly ChatService _chatService;
+        private readonly User _currentUser;
         private bool _isLoading;
         private StudentModel _selectedStudent;
         private string _newStudentLastName;
+        private string _chatMessage;
 
         public ObservableCollection<StudentModel> Students { get; } = new();
 
@@ -43,11 +47,22 @@ namespace z1.ViewModels
             }
         }
 
+        public string ChatMessage
+        {
+            get => _chatMessage;
+            set
+            {
+                _chatMessage = value;
+                OnPropertyChanged();
+            }
+        }
+
         public ICommand AddStudentCommand { get; }
         public ICommand AddGradeCommand { get; }
         public ICommand DeleteGradeCommand { get; }
         public ICommand SaveCommand { get; }
         public ICommand ExportCommand { get; }
+        public ICommand SendChatMessageCommand { get; }
 
         public bool IsLoading
         {
@@ -55,21 +70,27 @@ namespace z1.ViewModels
             set { _isLoading = value; OnPropertyChanged(); }
         }
 
-        public JournalViewModel()
+        public JournalViewModel(User currentUser)
         {
             _journalService = new JournalService();
+            _notificationService = new NotificationService();
+            _chatService = new ChatService();
+            _currentUser = currentUser;
 
             AddStudentCommand = new RelayCommand(AddStudent, CanAddStudent);
             AddGradeCommand = new RelayCommand(AddGrade, CanModifyGrade);
             DeleteGradeCommand = new RelayCommand(DeleteGrade, CanModifyGrade);
             SaveCommand = new RelayCommand(Save);
             ExportCommand = new RelayCommand(Export);
+            SendChatMessageCommand = new RelayCommand(SendChatMessage);
 
             LoadStudents();
+            CheckNotifications();
+            StartChatListener();
         }
 
-        private bool CanAddStudent(object parameter) => !string.IsNullOrWhiteSpace(NewStudentLastName);
-        private bool CanModifyGrade(object parameter) => SelectedStudent != null;
+        private bool CanAddStudent(object parameter) => !string.IsNullOrWhiteSpace(NewStudentLastName) && _currentUser.Role == "Teacher";
+        private bool CanModifyGrade(object parameter) => SelectedStudent != null && _currentUser.Role == "Teacher";
 
         private async void LoadStudents()
         {
@@ -93,7 +114,7 @@ namespace z1.ViewModels
             }
         }
 
-        private void AddStudent(object parameter)
+        private async void AddStudent(object parameter)
         {
             try
             {
@@ -106,6 +127,7 @@ namespace z1.ViewModels
                 Students.Add(newStudent);
                 SelectedStudent = newStudent;
                 NewStudentLastName = string.Empty;
+                await _journalService.SaveStudentsAsync(Students);
             }
             catch (Exception ex)
             {
@@ -113,23 +135,25 @@ namespace z1.ViewModels
             }
         }
 
-        private void AddGrade(object parameter)
+        private async void AddGrade(object parameter)
         {
             if (SelectedStudent == null) return;
 
             var gradeWindow = new GradeWindow();
             if (gradeWindow.ShowDialog() == true)
             {
-                SelectedStudent.Grades.Add(new GradeModel
+                var newGrade = new GradeModel
                 {
                     Value = gradeWindow.GradeValue,
                     Comment = gradeWindow.Comment,
                     Date = DateTime.Now
-                });
+                };
+                _journalService.AddGrade(SelectedStudent, newGrade, Students); // Передаем весь список студентов
+                _notificationService.SendNotification($"Новая оценка для {SelectedStudent.LastName}: {gradeWindow.GradeValue}");
             }
         }
 
-        private void DeleteGrade(object parameter)
+        private async void DeleteGrade(object parameter)
         {
             if (SelectedStudent == null || !SelectedStudent.Grades.Any()) return;
 
@@ -137,17 +161,49 @@ namespace z1.ViewModels
                 MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
                 SelectedStudent.Grades.RemoveAt(SelectedStudent.Grades.Count - 1);
+                await _journalService.SaveStudentsAsync(Students);
             }
         }
 
-        private void Save(object parameter)
+        private async void Save(object parameter)
         {
+            await _journalService.SaveStudentsAsync(Students);
             MessageBox.Show("Данные сохранены", "Сохранение");
         }
 
         private void Export(object parameter)
         {
             MessageBox.Show("Экспорт выполнен", "Экспорт");
+        }
+
+        private void CheckNotifications()
+        {
+            var notification = _notificationService.ReceiveNotification();
+            if (!string.IsNullOrEmpty(notification))
+            {
+                MessageBox.Show(notification, "Уведомление");
+            }
+        }
+
+        private async void SendChatMessage(object parameter)
+        {
+            if (!string.IsNullOrWhiteSpace(ChatMessage))
+            {
+                await _chatService.SendMessageAsync($"{_currentUser.Username}: {ChatMessage}");
+                ChatMessage = string.Empty;
+            }
+        }
+
+        private async void StartChatListener()
+        {
+            while (true)
+            {
+                var message = await _chatService.ReceiveMessageAsync();
+                if (!string.IsNullOrEmpty(message))
+                {
+                    MessageBox.Show(message, "Сообщение в чате");
+                }
+            }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
