@@ -4,24 +4,68 @@
         xmlns:local="clr-namespace:z1.Views"
         xmlns:viewModels="clr-namespace:z1.ViewModels"
         xmlns:converters="clr-namespace:z1.Converters"
-        Title="Электронный журнал" Height="600" Width="900">
+        Title="Электронный журнал" Height="600" Width="900"
+        Loaded="Window_Loaded">
 
     <Window.Resources>
+        <!-- Анимация появления -->
+        <Storyboard x:Key="FadeInAnimation">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                            From="0" To="1" Duration="0:0:1"/>
+        </Storyboard>
+
+        <!-- Анимация подсветки для студентов с низким баллом -->
+        <Storyboard x:Key="LowGradeHighlightAnimation">
+            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                            From="Transparent" To="Red" Duration="0:0:0.5" AutoReverse="True" RepeatBehavior="Forever"/>
+        </Storyboard>
+
+        <!-- Указываем все конвертеры явно -->
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <converters:NullToBooleanConverter x:Key="NullToBooleanConverter"/>
         <converters:CommentsToStringConverter x:Key="CommentsToStringConverter"/>
+        <converters:LowGradeConverter x:Key="LowGradeConverter"/>
+
+        <!-- Стиль для элементов списка студентов -->
+        <Style TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Style.Triggers>
+                <!-- Условие для студентов с низким баллом -->
+                <DataTrigger Binding="{Binding AverageGrade, Converter={StaticResource LowGradeConverter}}" Value="True">
+                    <Setter Property="BorderBrush" Value="Red"/>
+                    <Setter Property="BorderThickness" Value="2"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListViewItem">
+                                <Border x:Name="StudentBorder" BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        Background="Transparent">
+                                    <ContentPresenter/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <!-- Используем EventTrigger вместо Trigger с IsLoaded -->
+                                    <EventTrigger RoutedEvent="Loaded">
+                                        <BeginStoryboard Storyboard="{StaticResource LowGradeHighlightAnimation}"/>
+                                    </EventTrigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
 
         <DataTemplate x:Key="StudentTemplate">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{Binding Id}" Width="50" Margin="5"/>
                 <StackPanel Orientation="Horizontal" Width="350">
                     <TextBox Text="{Binding LastName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                         Width="150" Margin="5"/>
-                    <TextBlock Text="{Binding Grades, Converter={StaticResource CommentsToStringConverter}}" 
-                           Margin="5" TextWrapping="Wrap" MaxWidth="190"/>
+                             Width="150" Margin="5"/>
+                    <TextBlock Text="{Binding Grades.Last.Comment, StringFormat='Комментарий: {0}', FallbackValue='Нет комментария'}" 
+                               Margin="5" TextWrapping="Wrap" MaxWidth="190"/>
                 </StackPanel>
-                <TextBlock Text="{Binding Grades.Last.Value, StringFormat='Последняя оценка: {0}'}" Width="100" Margin="5"/>
-                <TextBlock Text="{Binding AverageGrade, StringFormat='Средний балл: {0:N2}'}" Width="120" Margin="5"/>
+                <TextBlock Text="{Binding Grades.Last.Value, StringFormat='Последняя оценка: {0}', FallbackValue='-'}" Width="100" Margin="5"/>
+                <TextBlock Text="{Binding AverageGrade, StringFormat='Средний балл: {0:N2}', FallbackValue='0.00'}" Width="120" Margin="5"/>
             </StackPanel>
         </DataTemplate>
 
@@ -31,7 +75,7 @@
         </Style>
     </Window.Resources>
 
-    <Grid>
+    <Grid x:Name="MainGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -72,10 +116,10 @@
             </StackPanel>
         </GroupBox>
 
-        <ListView Grid.Row="4" ItemsSource="{Binding Students}" 
+        <ListView Grid.Row="4" x:Name="StudentsListView" ItemsSource="{Binding Students}" 
                   ItemTemplate="{StaticResource StudentTemplate}"
                   SelectedItem="{Binding SelectedStudent}"
-                  Margin="5">
+                  Margin="5" MouseDoubleClick="StudentsListView_MouseDoubleClick">
             <ListView.InputBindings>
                 <KeyBinding Key="Delete" Command="{Binding DeleteGradeCommand}"/>
             </ListView.InputBindings>

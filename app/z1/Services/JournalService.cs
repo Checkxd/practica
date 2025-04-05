@@ -56,7 +56,7 @@ namespace z1.Services
             }
         }
 
-        public async void AddGrade(StudentModel student, GradeModel grade, ObservableCollection<StudentModel> allStudents)
+        public async Task AddGrade(StudentModel student, GradeModel grade, ObservableCollection<StudentModel> allStudents)
         {
             student.Grades.Add(grade);
             await SaveStudentsAsync(allStudents); // Сохраняем весь список студентов

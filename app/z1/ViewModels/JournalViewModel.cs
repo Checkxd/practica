@@ -23,7 +23,7 @@ namespace z1.ViewModels
         private string _newStudentLastName;
         private string _chatMessage;
 
-        public ObservableCollection<StudentModel> Students { get; } = new();
+        public ObservableCollection<StudentModel> Students { get; } = new ObservableCollection<StudentModel>();
 
         public StudentModel SelectedStudent
         {
@@ -103,6 +103,7 @@ namespace z1.ViewModels
                 {
                     Students.Add(student);
                 }
+                OnPropertyChanged(nameof(Students)); // Обновляем UI после загрузки
             }
             catch (Exception ex)
             {
@@ -148,8 +149,13 @@ namespace z1.ViewModels
                     Comment = gradeWindow.Comment,
                     Date = DateTime.Now
                 };
-                _journalService.AddGrade(SelectedStudent, newGrade, Students); // Передаем весь список студентов
+                await _journalService.AddGrade(SelectedStudent, newGrade, Students);
                 _notificationService.SendNotification($"Новая оценка для {SelectedStudent.LastName}: {gradeWindow.GradeValue}");
+                OnPropertyChanged(nameof(Students)); // Обновляем весь список
+                if (SelectedStudent != null)
+                {
+                    OnPropertyChanged(nameof(SelectedStudent)); // Обновляем выбранного студента
+                }
             }
         }
 
@@ -162,6 +168,11 @@ namespace z1.ViewModels
             {
                 SelectedStudent.Grades.RemoveAt(SelectedStudent.Grades.Count - 1);
                 await _journalService.SaveStudentsAsync(Students);
+                OnPropertyChanged(nameof(Students));
+                if (SelectedStudent != null)
+                {
+                    OnPropertyChanged(nameof(SelectedStudent));
+                }
             }
         }
 
