@@ -6,7 +6,9 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
 using z1.Commands;
+using z1.Data;
 using z1.Models;
+using z1.Repositories;
 using z1.Services;
 using z1.Views;
 
@@ -14,18 +16,23 @@ namespace z1.ViewModels
 {
     public class JournalViewModel : INotifyPropertyChanged
     {
-        private readonly JournalService _journalService;
+        private readonly JournalDbContext _context;
+        private readonly StudentRepository _studentRepo;
+        private readonly CourseRepository _courseRepo;
+        private readonly EnrollmentRepository _enrollmentRepo;
         private readonly NotificationService _notificationService;
         private readonly ChatService _chatService;
         private readonly User _currentUser;
         private bool _isLoading;
-        private StudentModel _selectedStudent;
+        private Student _selectedStudent;
         private string _newStudentLastName;
         private string _chatMessage;
 
-        public ObservableCollection<StudentModel> Students { get; } = new ObservableCollection<StudentModel>();
+        public ObservableCollection<Student> Students { get; } = new();
+        public ObservableCollection<Course> Courses { get; } = new();
+        public ObservableCollection<Enrollment> Enrollments { get; } = new();
 
-        public StudentModel SelectedStudent
+        public Student SelectedStudent
         {
             get => _selectedStudent;
             set
@@ -58,6 +65,7 @@ namespace z1.ViewModels
         }
 
         public ICommand AddStudentCommand { get; }
+        public ICommand EnrollStudentCommand { get; }
         public ICommand AddGradeCommand { get; }
         public ICommand DeleteGradeCommand { get; }
         public ICommand SaveCommand { get; }
@@ -72,19 +80,23 @@ namespace z1.ViewModels
 
         public JournalViewModel(User currentUser)
         {
-            _journalService = new JournalService();
+            _context = new JournalDbContext();
+            _studentRepo = new StudentRepository(_context);
+            _courseRepo = new CourseRepository(_context);
+            _enrollmentRepo = new EnrollmentRepository(_context);
             _notificationService = new NotificationService();
             _chatService = new ChatService();
             _currentUser = currentUser;
 
             AddStudentCommand = new RelayCommand(AddStudent, CanAddStudent);
+            EnrollStudentCommand = new RelayCommand(EnrollStudent, CanModifyGrade);
             AddGradeCommand = new RelayCommand(AddGrade, CanModifyGrade);
             DeleteGradeCommand = new RelayCommand(DeleteGrade, CanModifyGrade);
             SaveCommand = new RelayCommand(Save);
             ExportCommand = new RelayCommand(Export);
             SendChatMessageCommand = new RelayCommand(SendChatMessage);
 
-            LoadStudents();
+            LoadData();
             CheckNotifications();
             StartChatListener();
         }
@@ -92,18 +104,26 @@ namespace z1.ViewModels
         private bool CanAddStudent(object parameter) => !string.IsNullOrWhiteSpace(NewStudentLastName) && _currentUser.Role == "Teacher";
         private bool CanModifyGrade(object parameter) => SelectedStudent != null && _currentUser.Role == "Teacher";
 
-        private async void LoadStudents()
+        private async void LoadData()
         {
             IsLoading = true;
             try
             {
-                var loadedStudents = await _journalService.LoadStudentsAsync();
+                var students = await _studentRepo.GetAllAsync();
                 Students.Clear();
-                foreach (var student in loadedStudents)
-                {
-                    Students.Add(student);
-                }
-                OnPropertyChanged(nameof(Students)); // Обновляем UI после загрузки
+                foreach (var student in students) Students.Add(student);
+
+                var courses = await _courseRepo.GetAllAsync();
+                Courses.Clear();
+                foreach (var course in courses) Courses.Add(course);
+
+                var enrollments = await _enrollmentRepo.GetAllAsync();
+                Enrollments.Clear();
+                foreach (var enrollment in enrollments) Enrollments.Add(enrollment);
+
+                OnPropertyChanged(nameof(Students));
+                OnPropertyChanged(nameof(Courses));
+                OnPropertyChanged(nameof(Enrollments));
             }
             catch (Exception ex)
             {
@@ -119,16 +139,15 @@ namespace z1.ViewModels
         {
             try
             {
-                var newStudent = new StudentModel
+                var newStudent = new Student
                 {
                     Id = Students.Count > 0 ? Students.Max(s => s.Id) + 1 : 1,
                     LastName = NewStudentLastName.Trim()
                 };
-
+                await _studentRepo.AddAsync(newStudent);
                 Students.Add(newStudent);
                 SelectedStudent = newStudent;
                 NewStudentLastName = string.Empty;
-                await _journalService.SaveStudentsAsync(Students);
             }
             catch (Exception ex)
             {
@@ -136,49 +155,62 @@ namespace z1.ViewModels
             }
         }
 
+        private async void EnrollStudent(object parameter)
+        {
+            if (SelectedStudent == null) return;
+            var enrollWindow = new EnrollmentWindow(Courses);
+            if (enrollWindow.ShowDialog() == true)
+            {
+                var enrollment = new Enrollment
+                {
+                    StudentId = SelectedStudent.Id,
+                    CourseId = enrollWindow.SelectedCourse.Id,
+                    Date = DateTime.Now
+                };
+                await _enrollmentRepo.AddAsync(enrollment);
+                SelectedStudent.Enrollments.Add(enrollment);
+                Enrollments.Add(enrollment);
+                OnPropertyChanged(nameof(Enrollments));
+            }
+        }
+
         private async void AddGrade(object parameter)
         {
             if (SelectedStudent == null) return;
-
             var gradeWindow = new GradeWindow();
             if (gradeWindow.ShowDialog() == true)
             {
-                var newGrade = new GradeModel
+                var enrollment = SelectedStudent.Enrollments.LastOrDefault();
+                if (enrollment != null)
                 {
-                    Value = gradeWindow.GradeValue,
-                    Comment = gradeWindow.Comment,
-                    Date = DateTime.Now
-                };
-                await _journalService.AddGrade(SelectedStudent, newGrade, Students);
-                _notificationService.SendNotification($"Новая оценка для {SelectedStudent.LastName}: {gradeWindow.GradeValue}");
-                OnPropertyChanged(nameof(Students)); // Обновляем весь список
-                if (SelectedStudent != null)
-                {
-                    OnPropertyChanged(nameof(SelectedStudent)); // Обновляем выбранного студента
+                    enrollment.Grade = gradeWindow.GradeValue;
+                    enrollment.Comment = gradeWindow.Comment;
+                    enrollment.Date = DateTime.Now;
+                    await _enrollmentRepo.UpdateAsync(enrollment);
+                    _notificationService.SendNotification($"Новая оценка для {SelectedStudent.LastName}: {gradeWindow.GradeValue}");
+                    OnPropertyChanged(nameof(Enrollments));
+                    OnPropertyChanged(nameof(SelectedStudent));
                 }
             }
         }
 
         private async void DeleteGrade(object parameter)
         {
-            if (SelectedStudent == null || !SelectedStudent.Grades.Any()) return;
-
-            if (MessageBox.Show("Удалить последнюю оценку?", "Подтверждение",
-                MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            if (SelectedStudent == null || !SelectedStudent.Enrollments.Any()) return;
+            if (MessageBox.Show("Удалить последнюю оценку?", "Подтверждение", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
-                SelectedStudent.Grades.RemoveAt(SelectedStudent.Grades.Count - 1);
-                await _journalService.SaveStudentsAsync(Students);
-                OnPropertyChanged(nameof(Students));
-                if (SelectedStudent != null)
-                {
-                    OnPropertyChanged(nameof(SelectedStudent));
-                }
+                var enrollment = SelectedStudent.Enrollments.Last();
+                await _enrollmentRepo.DeleteAsync(enrollment.StudentId, enrollment.CourseId);
+                SelectedStudent.Enrollments.Remove(enrollment);
+                Enrollments.Remove(enrollment);
+                OnPropertyChanged(nameof(Enrollments));
+                OnPropertyChanged(nameof(SelectedStudent));
             }
         }
 
         private async void Save(object parameter)
         {
-            await _journalService.SaveStudentsAsync(Students);
+            await _context.SaveChangesAsync();
             MessageBox.Show("Данные сохранены", "Сохранение");
         }
 

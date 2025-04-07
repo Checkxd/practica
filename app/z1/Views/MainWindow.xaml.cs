@@ -1,39 +1,30 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media.Animation;
 using z1.Models;
 using z1.ViewModels;
-using z1.Views;
 
 namespace z1.Views
 {
     public partial class MainWindow : Window
     {
-        public MainWindow()
+        public MainWindow(User user)
         {
             InitializeComponent();
-            var loginWindow = new LoginWindow();
-            if (loginWindow.ShowDialog() != true)
-            {
-                Close();
-                return;
-            }
-            DataContext = new JournalViewModel(loginWindow.CurrentUser);
+            DataContext = new JournalViewModel(user);
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            var fadeIn = (Storyboard)FindResource("FadeInAnimation");
-            fadeIn.Begin(MainGrid);
+            var animation = (System.Windows.Media.Animation.Storyboard)FindResource("FadeInAnimation");
+            animation.Begin(MainGrid);
         }
 
         private void StudentsListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (StudentsListView.SelectedItem is StudentModel selectedStudent)
+            if (sender is ListView listView && listView.SelectedItem is Student student)
             {
-                var progressWindow = new StudentProgressWindow(selectedStudent);
-                progressWindow.ShowDialog();
+                new StudentProgressWindow(student).ShowDialog();
             }
         }
     }

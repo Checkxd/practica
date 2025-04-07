@@ -1,0 +1,16 @@
+﻿<Window x:Class="z1.Views.EnrollmentWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Запись на курс" Height="200" Width="300">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Выберите курс:" Margin="0,0,0,5"/>
+        <ComboBox Grid.Row="1" ItemsSource="{Binding}" DisplayMemberPath="Name" SelectedItem="{Binding SelectedCourse, Mode=TwoWay}" Margin="0,0,0,5"/>
+        <Button Grid.Row="2" Content="Записать" Width="80" HorizontalAlignment="Right" Click="Enroll_Click"/>
+    </Grid>
+</Window>

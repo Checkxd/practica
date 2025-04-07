@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace z1.Models
 {
-    public class StudentModel : INotifyPropertyChanged
+    public class Student : INotifyPropertyChanged
     {
         private int _id;
         private string _lastName;
@@ -14,32 +12,22 @@ namespace z1.Models
         public int Id
         {
             get => _id;
-            set
-            {
-                if (_id == value) return;
-                _id = value;
-                OnPropertyChanged();
-            }
+            set { _id = value; OnPropertyChanged(); }
         }
 
         public string LastName
         {
             get => _lastName;
-            set
-            {
-                if (_lastName == value) return;
-                _lastName = value;
-                OnPropertyChanged();
-            }
+            set { _lastName = value; OnPropertyChanged(); }
         }
 
-        public ObservableCollection<GradeModel> Grades { get; } = new ObservableCollection<GradeModel>();
+        public ObservableCollection<Enrollment> Enrollments { get; } = new ObservableCollection<Enrollment>();
 
-        public double AverageGrade => Grades.Any() ? Grades.Average(g => g.Value) : 0;
+        public double AverageGrade => Enrollments.Any() ? Enrollments.Average(e => e.Grade ?? 0) : 0;
 
-        public StudentModel()
+        public Student()
         {
-            Grades.CollectionChanged += (s, e) => OnPropertyChanged(nameof(AverageGrade));
+            Enrollments.CollectionChanged += (s, e) => OnPropertyChanged(nameof(AverageGrade));
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

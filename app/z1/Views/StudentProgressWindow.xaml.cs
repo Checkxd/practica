@@ -5,15 +5,10 @@ namespace z1.Views
 {
     public partial class StudentProgressWindow : Window
     {
-        public StudentProgressWindow(StudentModel student)
+        public StudentProgressWindow(Student student)
         {
             InitializeComponent();
             DataContext = student;
-        }
-
-        private void Close_Click(object sender, RoutedEventArgs e)
-        {
-            Close();
         }
     }
 }
