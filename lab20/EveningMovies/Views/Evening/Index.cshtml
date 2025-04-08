@@ -1,0 +1,13 @@
+﻿@model List<EveningMovies.Models.Movie>
+
+<h2>Список фильмов на вечер</h2>
+@foreach (var movie in Model)
+{
+    <div>
+        <strong>@movie.Title</strong> – @movie.Genre
+        <p>Рекомендован: @movie.RecommendedBy</p>
+        <p>Добавлен: @movie.DateAdded.ToShortDateString()</p>
+        <a href="@Url.Action("Details", new { id = movie.Id })">Подробнее</a>
+    </div>
+}
+<a href="@Url.Action("Add")">Добавить новый фильм</a>

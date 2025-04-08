@@ -1,0 +1,7 @@
+﻿@model EveningMovies.Models.Movie
+
+<h2>Фильм "@Model.Title"</h2>
+<p><strong>Жанр:</strong> @Model.Genre</p>
+<p><strong>Рекомендован:</strong> @Model.RecommendedBy</p>
+<p><strong>Добавлен:</strong> @Model.DateAdded.ToShortDateString()</p>
+<a href="@Url.Action("Index")">Назад</a>

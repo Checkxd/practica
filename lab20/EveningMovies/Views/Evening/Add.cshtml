@@ -1,0 +1,9 @@
+﻿@model EveningMovies.Models.Movie
+
+@using (Html.BeginForm())
+{
+    <p>Название фильма: @Html.TextBoxFor(m => m.Title)</p>
+    <p>Жанр: @Html.TextBoxFor(m => m.Genre)</p>
+    <p>Рекомендован: @Html.TextBoxFor(m => m.RecommendedBy)</p>
+    <button type="submit">Добавить</button>
+}
